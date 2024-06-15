@@ -2,10 +2,153 @@ import java.sql.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class Runner {
     public static void main(String[] args) {
 
+        Scanner scanner = SingletonScanner.getInstance().getScanner();
+        boolean run = false;
+
+        while(!run) {
+            Runner.menu();
+
+            try {
+
+                int input = scanner.nextInt();
+
+                if (input == 1) {
+                    Runner.initialize();
+                } else if (input == 2) {
+                    Runner.saveEmployee();
+                } else if (input == 3) {
+                    Runner.viewEmployees();
+                } else if (input == 4) {
+                    run = true;
+                    scanner.close();
+                    System.exit(1);
+
+                } else{
+                    System.out.println("Provide input in given range");
+                }
+
+            } catch(Exception ex) {
+                System.out.println("Numbers are allowed only");
+                scanner.nextLine();
+            }
+
+            System.out.println("\n\nPlease enter choice ...\n\n");
+        }
+
+    }
+
+    private static void menu() {
+        System.out.println("---Employee Management---");
+        System.out.println("1. Initialize");
+        System.out.println("2. Save Employee");
+        System.out.println("3. View Employee List");
+        System.out.println("4. Exit");
+    }
+
+    private static void saveEmployee() {
+
+        Scanner scanner = SingletonScanner.getInstance().getScanner();
+        System.out.println("Enter employee details");
+
+        // Consume newline character left from previous input or prompt
+        scanner.nextLine();
+
+        // Ensure name input is read correctly
+        System.out.print("Name: ");
+        String name = scanner.nextLine();
+
+        // Ensure age input is read correctly
+        System.out.print("Age: ");
+        while (!scanner.hasNextInt()) {
+            System.out.println("Invalid input. Please enter a valid integer for age.");
+            scanner.next(); // discard the invalid input
+        }
+        int age = scanner.nextInt();
+        scanner.nextLine();  // Consume the leftover newline
+
+        // Ensure gender input is read correctly
+        System.out.print("Gender: ");
+        String gender = scanner.nextLine();
+
+        // Ensure department input is read correctly
+        System.out.print("Department: ");
+        String department = scanner.nextLine();
+
+        // Ensure date of joining input is read correctly
+        System.out.print("Date of joining: ");
+        String dateOfJoining = scanner.nextLine();
+
+        // Ensure salary input is read correctly
+        System.out.print("Salary: ");
+        while (!scanner.hasNextDouble()) {
+            System.out.println("Invalid input. Please enter a valid number for salary.");
+            scanner.next(); // discard the invalid input
+        }
+        double salary = scanner.nextDouble();
+        scanner.nextLine();  // Consume the leftover newline
+
+
+        Employee employee = new Employee();
+        employee.setName(name);
+        employee.setAge(age);
+        employee.setGender(gender);
+        employee.setDepartment(department);
+        employee.setDateOfJoining(LocalDate.now());
+        employee.setSalary(salary);
+
+        System.out.println(employee);
+
+
+        try {
+            Connection connection = DatabaseConnectionManager.getInstance().getConnection();
+
+            String query = "INSERT into dbo.employee(name, age, gender, department, date_of_joining, salary) values(?,?,?,?,?,?)";
+
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setString(1, employee.getName());
+            preparedStatement.setInt(2, employee.getAge());
+            preparedStatement.setString(3, employee.getGender());
+            preparedStatement.setString(4, employee.getDepartment());
+            preparedStatement.setDate(5, Date.valueOf(employee.getDateOfJoining()));
+            preparedStatement.setDouble(6, employee.getSalary());
+
+            int result = preparedStatement.executeUpdate();
+            if (result == 1) {
+                System.out.println("Inserted Successfully!");
+            }
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+
+    }
+
+    private static void viewEmployees() {
+
+        try {
+            Connection connection = DatabaseConnectionManager.getInstance().getConnection();
+
+            String query = "SELECT * from dbo.employee";
+            Statement statement = connection.createStatement();
+            ResultSet resultSet = statement.executeQuery(query);
+
+            while(resultSet.next()) {
+                String name = resultSet.getString("name");
+                String department = resultSet.getString("department");
+                System.out.println("Name: " + name + " works in Department: " +  department);
+            }
+        } catch (SQLException ex) {
+            System.out.println(ex.getMessage());
+        }
+
+    }
+
+    @Deprecated
+    private static void previousCode() {
         String url = "jdbc:postgresql://localhost:5432/xyz";
         String user = "postgres";
         String password = "password";
@@ -58,7 +201,7 @@ public class Runner {
         }
     }
 
-    public static List<Employee> initialize() {
+    private static List<Employee> initialize() {
         List<Employee> employeeList = new ArrayList<>();
 
         employeeList.add(new Employee(111, "Jiya Brein", 32, "Female", "HR", LocalDate.of(2024, 1, 20), 25000.0));
